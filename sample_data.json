@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Dr. Sarah Johnson",
+    "department": "Computer Science",
+    "specialty": "Artificial Intelligence",
+    "years_experience": 15,
+    "salary": 95000
+  },
+  {
+    "name": "Prof. Michael Chen",
+    "department": "Mathematics",
+    "specialty": "Applied Statistics",
+    "years_experience": 8,
+    "salary": 72000
+  },
+  {
+    "name": "Dr. Emily Rodriguez",
+    "department": "Engineering",
+    "specialty": "Machine Learning",
+    "years_experience": 12,
+    "salary": 88000
+  },
+  {
+    "name": "Prof. David Thompson",
+    "department": "Physics",
+    "specialty": "Quantum Computing",
+    "years_experience": 20,
+    "salary": 105000
+  },
+  {
+    "name": "Dr. Lisa Anderson",
+    "department": "Business",
+    "specialty": "Data Science",
+    "years_experience": 6,
+    "salary": 68000
+  }
+]

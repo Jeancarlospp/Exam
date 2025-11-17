@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Management System</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Professor Management System</h1>
+            <p class="subtitle">Company X - Academic Database</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Insert Professor Form -->
+            <section class="card">
+                <h2>Add New Professor</h2>
+                <form id="insertForm">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="e.g., Dr. John Smith">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">Department *</label>
+                        <select id="department" name="department" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Business">Business</option>
+                            <option value="Arts">Arts</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialty">Specialty *</label>
+                        <input type="text" id="specialty" name="specialty" required placeholder="e.g., Artificial Intelligence">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="years_experience">Years of Experience *</label>
+                        <input type="number" id="years_experience" name="years_experience" required min="0" max="50" placeholder="e.g., 5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="salary">Base Salary (USD) *</label>
+                        <input type="number" id="salary" name="salary" required min="0" step="0.01" placeholder="e.g., 50000">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Professor</button>
+                </form>
+                <div id="insertMessage" class="message"></div>
+            </section>
+
+            <!-- Read All Professors -->
+            <section class="card">
+                <h2>All Professors</h2>
+                <button id="loadProfessors" class="btn btn-secondary">Load All Professors</button>
+                <div id="loadMessage" class="message"></div>
+                <div id="professorsContainer"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Insert Professor
+        document.getElementById('insertForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert numeric fields
+            data.years_experience = parseInt(data.years_experience);
+            data.salary = parseFloat(data.salary);
+            
+            try {
+                const response = await fetch('php/insert.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                const messageDiv = document.getElementById('insertMessage');
+                
+                if (result.success) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = '✓ Professor added successfully!';
+                    this.reset();
+                    
+                    // Auto-load professors after insert
+                    setTimeout(() => {
+                        document.getElementById('loadProfessors').click();
+                    }, 500);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = '✗ Error: ' + result.message;
+                }
+            } catch (error) {
+                const messageDiv = document.getElementById('insertMessage');
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '✗ Error: ' + error.message;
+            }
+        });
+
+        // Load All Professors
+        document.getElementById('loadProfessors').addEventListener('click', async function() {
+            const messageDiv = document.getElementById('loadMessage');
+            const container = document.getElementById('professorsContainer');
+            
+            messageDiv.textContent = 'Loading...';
+            messageDiv.className = 'message info';
+            
+            try {
+                const response = await fetch('php/read_all.php');
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        container.innerHTML = '<p class="no-data">No professors found in the database.</p>';
+                        messageDiv.textContent = '';
+                        return;
+                    }
+                    
+                    // Calculate totals for summary
+                    const totalSalary = result.data.reduce((sum, prof) => sum + prof.salary, 0);
+                    const totalBonus = result.data.reduce((sum, prof) => sum + prof.computed_bonus, 0);
+                    const avgExperience = result.data.reduce((sum, prof) => sum + prof.years_experience, 0) / result.data.length;
+                    
+                    let html = `
+                        <div class="summary-card">
+                            <h3>Summary Statistics</h3>
+                            <div class="stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Professors:</span>
+                                    <span class="stat-value">${result.data.length}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Base Salary:</span>
+                                    <span class="stat-value">$${totalSalary.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Bonuses:</span>
+                                    <span class="stat-value">$${totalBonus.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Average Experience:</span>
+                                    <span class="stat-value">${avgExperience.toFixed(1)} years</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="professors-grid">
+                    `;
+                    
+                    result.data.forEach(professor => {
+                        const totalCompensation = professor.salary + professor.computed_bonus;
+                        const bonusPercentage = (professor.computed_bonus / professor.salary * 100).toFixed(1);
+                        
+                        html += `
+                            <div class="professor-card">
+                                <div class="professor-header">
+                                    <h3>${professor.name}</h3>
+                                    <span class="badge">${professor.department}</span>
+                                </div>
+                                <div class="professor-details">
+                                    <p><strong>Specialty:</strong> ${professor.specialty}</p>
+                                    <p><strong>Experience:</strong> ${professor.years_experience} years</p>
+                                    <p><strong>Base Salary:</strong> $${professor.salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                                    <p><strong>Computed Bonus:</strong> <span class="bonus-amount">$${professor.computed_bonus.toLocaleString('en-US', {minimumFractionDigits: 2})}</span> (${bonusPercentage}%)</p>
+                                    <p class="total-compensation"><strong>Total Compensation:</strong> $${totalCompensation.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                                    <p class="bonus-explanation"><em>${professor.bonus_explanation}</em></p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = `✓ Loaded ${result.data.length} professor(s) successfully!`;
+                } else {
+                    container.innerHTML = '';
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = '✗ Error: ' + result.message;
+                }
+            } catch (error) {
+                container.innerHTML = '';
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '✗ Error: ' + error.message;
+            }
+        });
+
+        // Load professors on page load
+        window.addEventListener('load', function() {
+            document.getElementById('loadProfessors').click();
+        });
+    </script>
+</body>
+</html>
